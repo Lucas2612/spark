@@ -49,7 +49,7 @@ abstract class Routable {
      * @param path  the path
      * @param route The route
      */
-    public void get(final String path, final Route route) {
+    public void get(String path, Route route) {
         addRoute(HttpMethod.get.name(), RouteImpl.create(path, route));
     }
 

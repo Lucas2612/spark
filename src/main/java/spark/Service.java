@@ -19,7 +19,9 @@ package spark;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +74,7 @@ public final class Service extends Routable {
     protected Optional<Integer> webSocketIdleTimeoutMillis = Optional.empty();
 
     protected EmbeddedServer server;
+    protected Stack<String> groupPaths = new Stack<>();
     protected Routes routes;
 
     private TemplateEngine templateEngine;
@@ -362,13 +365,13 @@ public final class Service extends Routable {
     @Override
     public void addRoute(String httpMethod, RouteImpl route) {
         init();
-        routes.add(httpMethod + " '" + route.getPath() + "'", route.getAcceptType(), route);
+        routes.add(httpMethod + " '" + getGroupPath() + route.getPath() + "'", route.getAcceptType(), route);
     }
 
     @Override
     public void addFilter(String httpMethod, FilterImpl filter) {
         init();
-        routes.add(httpMethod + " '" + filter.getPath() + "'", filter.getAcceptType(), filter);
+        routes.add(httpMethod + " '" + getGroupPath() + filter.getPath() + "'", filter.getAcceptType(), filter);
     }
 
     public synchronized void init() {
@@ -411,6 +414,10 @@ public final class Service extends Routable {
         } else {
             routes = Routes.create();
         }
+    }
+
+    private String getGroupPath() {
+        return groupPaths.stream().collect(Collectors.joining(""));
     }
 
     //////////////////////////////////////////////////
@@ -581,6 +588,12 @@ public final class Service extends Routable {
     public String renderTemplate(String templatePath, Map<String, Object> model) {
         Assert.notNull(this.templateEngine);
         return this.templateEngine.render(templatePath, model);
+    }
+
+    public void group(String path, RouteGroup routeGroup) {
+        groupPaths.push(path);
+        routeGroup.addRoutes();
+        groupPaths.pop();
     }
 
 }

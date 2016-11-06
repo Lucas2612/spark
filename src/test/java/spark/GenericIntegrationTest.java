@@ -34,6 +34,7 @@ import static spark.Spark.after;
 import static spark.Spark.before;
 import static spark.Spark.exception;
 import static spark.Spark.get;
+import static spark.Spark.group;
 import static spark.Spark.halt;
 import static spark.Spark.patch;
 import static spark.Spark.post;
@@ -106,6 +107,13 @@ public class GenericIntegrationTest {
 
         get("/param/:param", (q, a) -> {
             return "echo: " + q.params(":param");
+        });
+
+        group("/firstGroup", () -> { // put this in the middle of other routes to test interference
+            get("/test", (q, a) -> "Single group works");
+            group("/secondGroup", () -> {
+                get("/test", (q, a) -> "Nested group works");
+            });
         });
 
         get("/paramandwild/:param/stuff/*", (q, a) -> {
@@ -450,5 +458,19 @@ public class GenericIntegrationTest {
         Assert.assertEquals("onConnect", events.get(0));
         Assert.assertEquals("onMessage: Hi Spark!", events.get(1));
         Assert.assertEquals("onClose: 1000 Bye!", events.get(2));
+    }
+
+    @Test
+    public void group_should_prefix_routes() throws Exception {
+        UrlResponse response = testUtil.doMethod("GET", "/firstGroup/test", null, "application/json");
+        Assert.assertTrue(response.status == 200);
+        Assert.assertEquals("Single group works", response.body);
+    }
+
+    @Test
+    public void groups_should_be_nestable() throws Exception {
+        UrlResponse response = testUtil.doMethod("GET", "/firstGroup/secondGroup/test", null, "application/json");
+        Assert.assertTrue(response.status == 200);
+        Assert.assertEquals("Nested group works", response.body);
     }
 }

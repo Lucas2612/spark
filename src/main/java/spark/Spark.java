@@ -563,4 +563,8 @@ public class Spark {
         return getInstance().renderTemplate(templatePath, model);
     }
 
+    public static void group(String path, RouteGroup routeGroup) {
+        getInstance().group(path, routeGroup);
+    }
+
 }
